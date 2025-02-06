@@ -19,8 +19,12 @@ class AuthRepository(IAuthRepository):
         return user
     
     async def add_user(self, user: User) -> None:
+        if await self.get_user_by_username(user.username):
+            raise Exception("Пользователь с таким ником уже существует")
+            
         self.db_context.add(user)
         await self.db_context.commit()
         await self.db_context.refresh(user)
+        return user
 
 

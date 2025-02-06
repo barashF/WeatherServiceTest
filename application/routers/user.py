@@ -4,7 +4,7 @@ from infrastructure.database.entities.user import User as UserDto
 from infrastructure.services.auth_service import AuthService
 from configuration.config import Config
 
-from fastapi import FastAPI, Depends, APIRouter
+from fastapi import FastAPI, Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 
@@ -17,7 +17,7 @@ router = APIRouter(
 
 @router.post('/register', summary="регистрация")
 async def register(user: User, auth_service: AuthService = Depends(get_auth_service)):
-    await auth_service.register_user(user.username, user.password)
+    return await auth_service.register_user(user.username, user.password)
 
 @router.post("/token", response_model=dict)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),

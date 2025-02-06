@@ -65,4 +65,4 @@ class AuthService:
     
     async def register_user(self, username, password):
         hashed_password = self.get_password_hash(password)
-        await self.auth_repository.add_user(UserDto(username=username, password=hashed_password))
+        return await self.auth_repository.add_user(UserDto(username=username, password=hashed_password))
