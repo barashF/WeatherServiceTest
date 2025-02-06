@@ -1,9 +1,8 @@
-from application.di import get_city_repository, get_city_service
+from application.di import get_city_repository
 from dal.models.city import City
 from dal.models.weather import Forecast
 from dal.interfaces.repositories.city import ICityRepository
 from dal.interfaces.services.weather import IWeatherService
-from dal.interfaces.services.city import ICityService
 from infrastructure.database.entities.city import City as CityModel
 from application.di import get_weather_service
 
@@ -29,13 +28,13 @@ async def add_new_city(city: City, city_repository: ICityRepository = Depends(ge
 
 @router.get('/get_all', summary="Получить список доступных городов")
 async def get_all_cities(city_repository: ICityRepository = Depends(get_city_repository)) -> List[str]:
-    return await city_repository.get_all()
+    return [city.name for city in await city_repository.get_all()]
 
 @router.get('/get_weather_by_city', summary="Получить погоду в городе")
 async def get_all_cities(name: str, temperature: bool, windspeed: bool, 
                          relativehumidity: bool, precipitation: bool,
-                         city_service: ICityService = Depends(get_city_service)):
-    return await city_service.get_forecast_by_city(name, Forecast(
+                         city_repository: ICityRepository = Depends(get_city_repository)):
+    return await city_repository.get_forecast_by_city(name, Forecast(
                                                             temperature=temperature,
                                                             windspeed=windspeed,
                                                             relativehumidity=relativehumidity,
