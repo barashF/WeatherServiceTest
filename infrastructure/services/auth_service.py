@@ -30,6 +30,26 @@ class AuthService:
             False
         return user
     
+    def validate_token(token: str) -> dict:
+        try:
+            payload = jwt.decode(token, SECRET_AUTH, algorithms=[ALGORITHM])
+            if "sub" not in payload or "exp" not in payload:
+                raise jwt.credentials_exception
+            return payload
+        except jwt.DecodeError:
+            raise HTTPException( 
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None):
         to_encode = data.copy()
         if expires_delta:
@@ -40,23 +60,25 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, self.config.SECRET_KEY, self.config.ALGORITHM)
         return encoded_jwt
     
+
     async def get_current_user(self, token: str = Depends(oauth2_scheme)):
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
         try:
-            payload = jwt.decode(token, self.config.SECRET_KEY, algorithms=[self.config.ALGORITHM])
-            username: str = payload.get("sub")
-            if username is None:
-                raise credentials_exception
-        except JWTError:
-            raise credentials_exception
-        user = await self.auth_repository.get_user_by_username(username)
-        if user is None:
-            raise credentials_exception
-        return user
+            user = await self.auth_repository.get_user_by_username(self.validate_token(token).get('sub'))
+
+            if user is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found"
+                )
+            return user
+
+        except (ValidationError, jwt.PyJWTError):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Could not validate credentials"
+            )
+
+    
     
     async def get_current_active_user(self, current_user: User = Depends(get_current_user)):
         if current_user["disabled"]:
