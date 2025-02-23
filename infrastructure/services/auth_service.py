@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/token")
 
 class AuthService:
     def __init__(self, auth_repository: AuthRepository):
